@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard interactivo para controlar y visualizar los climas de 8 regiones globales y sincronizar una tira LED.">
+    <title>Estación Meteorológica LED</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --transition-speed: 0.8s;
+            --font-family: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: #FFFFFF;
+            color: #1E293B;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: background-color var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1), 
+                        color var(--transition-speed) ease;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 28px;
+            padding: 2.5rem;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            transition: background var(--transition-speed) ease, 
+                        border-color var(--transition-speed) ease,
+                        box-shadow var(--transition-speed) ease;
+        }
+
+        /* Dark Theme overrides when night climate is selected */
+        body.dark-theme {
+            color: #F8FAFC;
+        }
+
+        body.dark-theme .container {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Header section */
+        header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-weight: 400;
+            opacity: 0.75;
+            font-size: 1rem;
+        }
+
+        /* Main Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Weather display card */
+        .weather-card {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.dark-theme .weather-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .weather-card .location-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .weather-card .temperature {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            display: flex;
+            align-items: flex-start;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .weather-card .temperature span {
+            font-size: 1.5rem;
+            margin-top: 0.3rem;
+            margin-left: 0.1rem;
+        }
+
+        .weather-card .condition {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            text-transform: capitalize;
+        }
+
+        /* Simulated physical LED strip */
+        .led-strip-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .led-strip-widget span {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.6;
+        }
+
+        .led-pixels {
+            display: flex;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 8px 12px;
+            border-radius: 50px;
+            justify-content: space-between;
+            transition: background 0.5s ease;
+        }
+
+        body.dark-theme .led-pixels {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .pixel {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #555;
+            transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                        box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Raw response terminal */
+        .raw-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .raw-container label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.6;
+        }
+
+        .terminal-block {
+            background: rgba(15, 23, 42, 0.05);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 20px;
+            padding: 1.2rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.dark-theme .terminal-block {
+            background: rgba(0, 0, 0, 0.35);
+            border-color: rgba(255, 255, 255, 0.05);
+            color: #34D399; /* Emerald text for terminal */
+        }
+
+        /* Botonera / Region Buttons */
+        .regions-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .regions-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .regions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 900px) {
+            .regions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .btn-region {
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 16px;
+            padding: 1rem 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: inherit;
+        }
+
+        .btn-region:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-region.active {
+            background: #2563EB;
+            color: #FFFFFF;
+            border-color: #2563EB;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.25);
+        }
+
+        body.dark-theme .btn-region {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-theme .btn-region:hover {
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        body.dark-theme .btn-region.active {
+            background: #38bdf8;
+            color: #0f172a;
+            border-color: #38bdf8;
+            box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-emoji {
+            font-size: 1.8rem;
+            display: inline-block;
+        }
+
+        .btn-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .btn-desc {
+            font-size: 0.65rem;
+            opacity: 0.6;
+        }
+
+        /* Loading Overlay */
+        .loading-spinner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-weight: 500;
+            font-size: 0.95rem;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-theme .loading-spinner {
+            background: rgba(15, 23, 42, 0.85);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <header>
+            <h1 id="main-heading">Controlador del Clima & Tira LED</h1>
+            <p>Selecciona una región global para consultar su clima actual, cambiar el fondo de pantalla y actualizar la iluminación LED.</p>
+        </header>
+
+        <main class="dashboard-grid">
+            
+            <!-- Weather Display Card (Left Column) -->
+            <section class="weather-card" id="weather-section">
+                <div class="loading-spinner" id="spinner">Cargando datos...</div>
+                
+                <div class="location-name" id="display-location">Cargando...</div>
+                <div class="temperature" id="display-temp">--<span>°C</span></div>
+                <div class="condition" id="display-desc">Obteniendo datos meteorológicos...</div>
+                
+                <!-- LED Strip Simulator -->
+                <div class="led-strip-widget">
+                    <span>Estado del LED Físico (GPIO 4)</span>
+                    <div class="led-pixels" id="pixel-strip">
+                        <!-- 15 simulated LED pixels -->
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                        <div class="pixel"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Raw API response log (Right Column) -->
+            <section class="raw-container" id="terminal-section">
+                <label for="raw-output">Respuesta de la API de Open-Meteo</label>
+                <div class="terminal-block" id="raw-output">Esperando solicitud...</div>
+            </section>
+
+        </main>
+
+        <!-- Region visual selector -->
+        <section class="regions-section">
+            <h2>Selecciona una Región Global</h2>
+            <div class="regions-grid" id="buttons-grid" role="group" aria-label="Selector de regiones">
+                <!-- Buttons will be populated dynamically -->
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // LED Animation & Chaos State variables
+        let currentLEDColor = [0, 0, 0];
+        let currentChaosFactor = 0.03;
+        let thunderstormMode = false;
+
+        // Chaos level mapping for different weather patterns (extremely exaggerated for non-sunny states)
+        const chaosMapping = {
+            "CLEAR_DAY": 0.02,      // Sol: Prácticamente estático, calma total
+            "CLEAR_NIGHT": 0.35,    // Noche despejada: Titileo centelleante e intenso de estrellas
+            "CLOUDY": 0.60,         // Nublado: Inestabilidad de brillo moderada/alta en los LEDs
+            "FOG": 0.40,            // Niebla: Oscilaciones de brillo densas y pesadas
+            "DRIZZLE": 0.95,        // Llovizna: Parpadeo rápido, caótico y cortante de gotas
+            "RAIN": 1.45,           // Lluvia: Caos strobe violento e intermitencia extrema
+            "SNOW": 0.80,           // Nieve: Brillos destellantes muy marcados
+            "THUNDERSTORM": 2.20,   // Tormenta: Turbulencia absoluta, intermitencia total y tormenta eléctrica
+            "DEFAULT": 0.30
+        };
+
+        // Preset regions matching config.py structure (simplified name list)
+        const regionsConfig = {
+            "actual": "Mi Ubicación Actual",
+            "riad": "Riad",
+            "londres": "Londres",
+            "tromso": "Tromsø",
+            "manaos": "Manaos",
+            "sydney": "Sídney",
+            "reikiavik": "Reikiavik",
+            "tokio": "Tokio"
+        };
+
+        // DOM elements
+        const buttonsGrid = document.getElementById("buttons-grid");
+        const displayLocation = document.getElementById("display-location");
+        const displayTemp = document.getElementById("display-temp");
+        const displayDesc = document.getElementById("display-desc");
+        const rawOutput = document.getElementById("raw-output");
+        const spinner = document.getElementById("spinner");
+        const pixelElements = document.querySelectorAll(".pixel");
+
+        // Populate button panel
+        function renderButtons() {
+            buttonsGrid.innerHTML = "";
+            Object.entries(regionsConfig).forEach(([key, name]) => {
+                const btn = document.createElement("button");
+                btn.className = "btn-region";
+                btn.id = `btn-${key}`;
+                btn.onclick = () => selectRegion(key);
+                btn.innerHTML = `
+                    <span class="btn-title">${name}</span>
+                `;
+                buttonsGrid.appendChild(btn);
+            });
+        }
+
+        // Fetch weather for a selected region
+        async function selectRegion(regionKey) {
+            // Update active states in buttons
+            document.querySelectorAll(".btn-region").forEach(b => b.classList.remove("active"));
+            const activeBtn = document.getElementById(`btn-${regionKey}`);
+            if (activeBtn) activeBtn.classList.add(activeBtn.id === "btn-actual" ? "active" : "active");
+
+            // Show loading spinner
+            spinner.style.display = "flex";
+
+            try {
+                const response = await fetch(`/api/weather?region=${regionKey}`);
+                if (!response.ok) {
+                    throw new Error("No se pudo obtener la información de clima.");
+                }
+
+                const data = await response.json();
+                
+                // Update text details
+                displayLocation.textContent = data.region_name;
+                displayTemp.innerHTML = `${data.temperature}<span>°C</span>`;
+                displayDesc.textContent = data.description;
+                
+                // Format and print JSON response to terminal
+                rawOutput.textContent = JSON.stringify(data.raw_payload, null, 2);
+
+                // Update page background color and dark theme toggling
+                document.body.style.backgroundColor = data.web_color;
+                
+                if (data.color_key === "CLEAR_NIGHT") {
+                    document.body.classList.add("dark-theme");
+                } else {
+                    document.body.classList.remove("dark-theme");
+                }
+
+                // Update simulated LED strip parameters to trigger dynamic animation loop
+                currentLEDColor = data.led_color;
+                currentChaosFactor = chaosMapping[data.color_key] || 0.1;
+                thunderstormMode = (data.color_key === "THUNDERSTORM");
+
+            } catch (err) {
+                console.error(err);
+                displayLocation.textContent = "Error";
+                displayDesc.textContent = "No se pudieron obtener los datos meteorológicos.";
+                rawOutput.textContent = `Error: ${err.message}`;
+            } finally {
+                spinner.style.display = "none";
+            }
+        }
+
+        // Dynamic LED effect loop (updates every 45ms for high speed and responsiveness)
+        function updateLEDEffects() {
+            const baseRGB = currentLEDColor;
+            const chaos = currentChaosFactor;
+            const isOff = baseRGB[0] === 0 && baseRGB[1] === 0 && baseRGB[2] === 0;
+
+            pixelElements.forEach((pixel) => {
+                if (isOff) {
+                    pixel.style.backgroundColor = "rgb(0, 0, 0)";
+                    pixel.style.boxShadow = "none";
+                    return;
+                }
+
+                let r = baseRGB[0];
+                let g = baseRGB[1];
+                let b = baseRGB[2];
+
+                // 1. Exaggerated Lightning strikes for Thunderstorms (higher probability per LED)
+                let isFlash = false;
+                if (thunderstormMode && Math.random() < 0.045) {
+                    isFlash = true;
+                }
+
+                if (isFlash) {
+                    r = 255;
+                    g = 255;
+                    b = 255;
+                } else {
+                    // 2. High-contrast, wide-range random brightness fluctuation
+                    // Amplified fluctuation range (chaos * 2.1) to allow dramatic contrasts
+                    const fluctuationRange = chaos * 2.10; 
+                    
+                    // Centered around 0.85, randomizing deeply
+                    const brightnessFactor = 0.85 + (Math.random() - 0.5) * fluctuationRange;
+                    
+                    // Clamp allows going completely dark (0.0) or extremely bright (2.2)
+                    const finalFactor = Math.min(2.2, Math.max(0.0, brightnessFactor));
+
+                    // Scale color channels to keep them in the exact same hue/family
+                    r = Math.min(255, Math.round(r * finalFactor));
+                    g = Math.min(255, Math.round(g * finalFactor));
+                    b = Math.min(255, Math.round(b * finalFactor));
+                }
+
+                // Apply dynamic values
+                pixel.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                
+                // Adjust glow radius to reflect the intensity of the flicker
+                const brightnessLevel = (r + g + b) / 765;
+                const glowRadius = isFlash ? 26 : (4 + brightnessLevel * 22);
+                
+                if (r === 0 && g === 0 && b === 0) {
+                    pixel.style.boxShadow = "none";
+                } else {
+                    pixel.style.boxShadow = `0 0 ${glowRadius}px rgba(${r}, ${g}, ${b}, 0.9)`;
+                }
+            });
+        }
+
+        // Start the infinite animation loop (45ms interval for aggressive flickering in high-chaos states)
+        setInterval(updateLEDEffects, 45);
+
+        // Initialize
+        renderButtons();
+        // Load default region (Ubicación Actual) on startup
+        selectRegion("actual");
+    </script>
+</body>
+</html>
