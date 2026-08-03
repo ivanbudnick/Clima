@@ -50,6 +50,7 @@ def api_weather():
         temp = weather_data["temperature"]
         code = weather_data["weather_code"]
         is_day = weather_data["is_day"]
+        daily_forecast = weather_data.get("daily", {})
         raw_payload = weather_data["raw"]
         
         # 3. Translate climate code into web and LED colors
@@ -70,6 +71,7 @@ def api_weather():
             "color_key": visuals["color_key"],
             "web_color": visuals["web_color"],
             "led_color": led_color,
+            "daily_forecast": daily_forecast,
             "raw_payload": raw_payload
         }
         

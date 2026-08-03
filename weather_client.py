@@ -70,7 +70,7 @@ def get_current_weather(latitude, longitude):
     Prints the raw API response JSON to the console.
     Returns a dictionary with temperature, weather code, is_day status, and the raw payload.
     """
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weather_code,is_day"
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto"
     
     try:
         data = http_get_json(url)
@@ -83,12 +83,14 @@ def get_current_weather(latitude, longitude):
         print("="*80 + "\n")
         
         current = data.get("current", {})
+        daily = data.get("daily", {})
         
         weather_info = {
             "time": current.get("time"),
             "temperature": current.get("temperature_2m"),
             "weather_code": current.get("weather_code"),
             "is_day": current.get("is_day"),
+            "daily": daily,
             "raw": data
         }
         return weather_info

@@ -217,6 +217,82 @@
             color: #34D399; /* Emerald text for terminal */
         }
 
+        /* Pronóstico / Forecast Styles */
+        .forecast-container {
+            margin-top: 1.5rem;
+            border-top: 1px solid rgba(15, 23, 42, 0.1);
+            padding-top: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        body.dark-theme .forecast-container {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .forecast-container h3 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.6;
+        }
+
+        .forecast-days {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+            overflow-x: auto;
+        }
+
+        .forecast-day-card {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            border-radius: 12px;
+            padding: 0.6rem 0.4rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            flex: 1;
+            min-width: 50px;
+            text-align: center;
+            transition: background 0.3s ease;
+        }
+
+        body.dark-theme .forecast-day-card {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .forecast-day-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.75;
+        }
+
+        .forecast-day-emoji {
+            font-size: 1.2rem;
+            margin: 0.1rem 0;
+        }
+
+        .forecast-day-temp {
+            font-size: 0.65rem;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .forecast-day-temp .max {
+            font-weight: 700;
+        }
+
+        .forecast-day-temp .min {
+            opacity: 0.5;
+        }
+
         /* Botonera / Region Buttons */
         .regions-section {
             display: flex;
@@ -366,6 +442,14 @@
                         <div class="pixel"></div>
                     </div>
                 </div>
+                
+                <!-- Pronóstico de los Próximos Días -->
+                <div class="forecast-container">
+                    <h3>Pronóstico Próximos Días</h3>
+                    <div class="forecast-days" id="forecast-days">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
             </section>
 
             <!-- Raw API response log (Right Column) -->
@@ -481,6 +565,9 @@
                 currentChaosFactor = chaosMapping[data.color_key] || 0.1;
                 thunderstormMode = (data.color_key === "THUNDERSTORM");
 
+                // Update daily weather forecast cards
+                renderForecast(data.daily_forecast);
+
             } catch (err) {
                 console.error(err);
                 displayLocation.textContent = "Error";
@@ -552,6 +639,58 @@
 
         // Start the infinite animation loop (45ms interval for aggressive flickering in high-chaos states)
         setInterval(updateLEDEffects, 45);
+
+        // Helper to format days in Spanish
+        function getDayName(dateString) {
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const date = new Date(dateString + 'T00:00:00');
+            return days[date.getDay()];
+        }
+
+        // Helper to get weather emoji from WMO weather code
+        function getWeatherEmoji(weatherCode) {
+            if (weatherCode === 0 || weatherCode === 1) return "☀️";
+            if (weatherCode === 2 || weatherCode === 3) return "☁️";
+            if (weatherCode === 45 || weatherCode === 48) return "🌫️";
+            if (weatherCode === 51 || weatherCode === 53 || weatherCode === 55 || weatherCode === 56 || weatherCode === 57) return "🌦️";
+            if (weatherCode === 61 || weatherCode === 63 || weatherCode === 65 || weatherCode === 66 || weatherCode === 67 || weatherCode === 80 || weatherCode === 81 || weatherCode === 82) return "🌧️";
+            if (weatherCode === 71 || weatherCode === 73 || weatherCode === 75 || weatherCode === 77 || weatherCode === 85 || weatherCode === 86) return "❄️";
+            if (weatherCode === 95 || weatherCode === 96 || weatherCode === 99) return "⛈️";
+            return "🌡️";
+        }
+
+        // Render forecast cards (next 5 days, starting tomorrow at index 1)
+        function renderForecast(dailyData) {
+            const forecastDaysContainer = document.getElementById("forecast-days");
+            forecastDaysContainer.innerHTML = "";
+            
+            if (!dailyData || !dailyData.time) {
+                forecastDaysContainer.innerHTML = "<p style='font-size:0.8rem; opacity:0.6;'>Pronóstico no disponible</p>";
+                return;
+            }
+
+            for (let i = 1; i <= 5; i++) {
+                const dateStr = dailyData.time[i];
+                if (!dateStr) break;
+                
+                const dayName = getDayName(dateStr);
+                const emoji = getWeatherEmoji(dailyData.weather_code[i]);
+                const maxTemp = Math.round(dailyData.temperature_2m_max[i]);
+                const minTemp = Math.round(dailyData.temperature_2m_min[i]);
+                
+                const card = document.createElement("div");
+                card.className = "forecast-day-card";
+                card.innerHTML = `
+                    <span class="forecast-day-name">${dayName}</span>
+                    <span class="forecast-day-emoji">${emoji}</span>
+                    <span class="forecast-day-temp">
+                        <span class="max">${maxTemp}°</span>
+                        <span class="min">${minTemp}°</span>
+                    </span>
+                `;
+                forecastDaysContainer.appendChild(card);
+            }
+        }
 
         // Initialize
         renderButtons();
