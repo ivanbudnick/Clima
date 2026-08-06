@@ -1,0 +1,62 @@
+[
+  {
+    "componente": "Módulo ESP32 / ESP8266 (NodeMCU / DevKit)",
+    "cantidad": 1,
+    "notas": "Microcontrolador seleccionado: NodeMCU ESP8266 (4MB, ESP-12E, WiFi, PWM, I2C). Encargado del control general de la tira LED, el procesamiento de efectos y la conectividad inalámbrica. Se alimenta con 5V provenientes del Step-Down o USB.",
+    "foto_origen": "IMG_5031.jpeg"
+  },
+  {
+    "componente": "Tira de LED RGB Digital (Fita LED Digital 12V)",
+    "cantidad": 1,
+    "notas": "Tira principal de iluminación RGB direccionable de 2.5 metros con 75 LEDs (chip WS2811) con cables pre-soldados de fábrica. Se alimenta con 12V.",
+    "foto_origen": "IMG_5037.jpeg"
+  },
+  {
+    "componente": "Fuente de alimentación / Adaptador AC/DC (Sagemcom)",
+    "cantidad": 1,
+    "notas": "Provee los 12V 2.0A necesarios para alimentar la tira LED y el circuito.",
+    "foto_origen": "IMG_5039.jpeg"
+  },
+  {
+    "componente": "Conector Jack DC hembra para chasis (DC-022)",
+    "cantidad": 1,
+    "notas": "Conexión de entrada de corriente desde la fuente Sagemcom hacia el circuito.",
+    "foto_origen": "IMG_5035.jpeg"
+  },
+  {
+    "componente": "Resistencia (Resistor) de 470 Ω",
+    "cantidad": 1,
+    "notas": "Colocada en serie en la línea de datos DIN para proteger la tira LED y evitar rebotes de señal.",
+    "foto_origen": "IMG_4996.jpg"
+  },
+  {
+    "componente": "Protoboard (Breadboard) estándar de 830 puntos",
+    "cantidad": 1,
+    "notas": "Placa de pruebas para el montaje del circuito electrónico.",
+    "foto_origen": "0004.jpeg"
+  },
+  {
+    "componente": "Cables Jumper DuPont (Macho-Macho / Macho-Hembra)",
+    "cantidad": 10,
+    "notas": "Cables jumper de colores para realizar las interconexiones en la protoboard.",
+    "foto_origen": "0004.jpeg"
+  },
+  {
+    "componente": "Módulo Regulador Step-Down DC-DC LM2596 (HW-411)",
+    "cantidad": 1,
+    "notas": "Reduce los 12V de la fuente principal a 5V para alimentar el microcontrolador de forma segura por el pin VIN.",
+    "foto_origen": "IMG_5050.jpeg"
+  },
+  {
+    "componente": "Capacitor Electrolítico 2200 µF / 16V",
+    "cantidad": 1,
+    "notas": "Filtro en paralelo con la línea de alimentación de 12V para mitigar caídas de tensión y picos de corriente.",
+    "foto_origen": "IMG_5050.jpeg"
+  },
+  {
+    "componente": "Interruptor de paso clásico (Interruptor de velador)",
+    "cantidad": 1,
+    "notas": "Interruptor de paso instalado en el cable de la fuente para cortar físicamente la corriente de alimentación al circuito.",
+    "foto_origen": "IMG_5050.jpeg"
+  }
+]

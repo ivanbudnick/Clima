@@ -1,6 +1,7 @@
 import sys
 import json
 import config
+import gc
 
 try:
     import urequests as requests
@@ -15,6 +16,7 @@ def http_get_json(url):
     Ensures that sockets are closed on MicroPython to prevent memory leaks.
     """
     if IS_MICROPYTHON:
+        gc.collect()
         response = None
         try:
             response = requests.get(url)
@@ -25,6 +27,7 @@ def http_get_json(url):
         finally:
             if response:
                 response.close()
+            gc.collect()
     else:
         try:
             response = requests.get(url, timeout=10)
@@ -70,7 +73,7 @@ def get_current_weather(latitude, longitude):
     Prints the raw API response JSON to the console.
     Returns a dictionary with temperature, weather code, is_day status, and the raw payload.
     """
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto"
+    url = f"http://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto"
     
     try:
         data = http_get_json(url)
@@ -79,7 +82,10 @@ def get_current_weather(latitude, longitude):
         print("\n" + "="*80)
         print(" [API RESPONSE] RESPUESTA GENERAL RECIBIDA DE OPEN-METEO")
         print("="*80)
-        print(json.dumps(data, indent=2))
+        try:
+            print(json.dumps(data, indent=2))
+        except TypeError:
+            print(json.dumps(data))
         print("="*80 + "\n")
         
         current = data.get("current", {})

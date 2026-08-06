@@ -1,16 +1,19 @@
 # Configuration for Weather-based LED Strip Controller
 
 # Wi-Fi Settings (used on MicroPython)
-WIFI_SSID = "TU_WIFI_SSID"
-WIFI_PASSWORD = "TU_WIFI_PASSWORD"
+WIFI_SSID = "El Fi del Wi"
+WIFI_PASSWORD = "teamolionelscaloni"
 WIFI_TIMEOUT_SECS = 20
 
 # Polling Settings (only used for standalone python loop)
 POLL_INTERVAL_SECS = 900 
 
 # LED Strip Settings
-LED_PIN = 4
-LED_COUNT = 30
+LED_PIN = 2
+LED_COUNT = 6
+FACTOR_BRILLO = 0.15  # Factor de brillo de seguridad (15%) por falta de capacitor
+COLOR_ORDER = "GRB"   # Orden de color físico: "RGB", "GRB", o "BRG"
+
 
 # 8 Preset Regions (1 auto-detected, 7 representative locations)
 REGIONS = {
@@ -62,10 +65,10 @@ COLOR_MAPPINGS = {
     "CLEAR_NIGHT": (20, 30, 80),       # Deep Dim Blue for night
     "CLOUDY": (100, 149, 237),         # Cornflower Blue / Grey-blue
     "FOG": (120, 120, 140),            # Misty Grey
-    "DRIZZLE": (0, 191, 255),          # Deep Sky Blue
-    "RAIN": (0, 0, 255),               # Blue
+    "DRIZZLE": (75, 10, 130),          # Indigo / Dark Violet
+    "RAIN": (55, 0, 110),              # Deep Dark Violet
     "SNOW": (240, 248, 255),           # White / Alice Blue
-    "THUNDERSTORM": (148, 0, 211),     # Violet / Purple
+    "THUNDERSTORM": (80, 0, 140),      # Dark Purple / Violet
     "DEFAULT": (255, 255, 255)         # White
 }
 
