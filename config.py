@@ -6,7 +6,7 @@ WIFI_PASSWORD = "teamolionelscaloni"
 WIFI_TIMEOUT_SECS = 20
 
 # OTA Update Settings (Base URL of raw files in the repository)
-OTA_BASE_URL = "https://raw.githubusercontent.com/ivanbudnick/Clima/main/"
+OTA_BASE_URL = "https://raw.githubusercontent.com/ivanbudnick/Clima/master/"
 
 # Polling Settings (only used for standalone python loop)
 POLL_INTERVAL_SECS = 900 
