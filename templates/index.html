@@ -399,6 +399,115 @@
         body.dark-theme .loading-spinner {
             background: rgba(15, 23, 42, 0.85);
         }
+
+        /* OTA Update styles */
+        .ota-section {
+            margin-top: 1rem;
+            border-top: 1px solid rgba(15, 23, 42, 0.1);
+            padding-top: 1.2rem;
+            text-align: left;
+        }
+
+        body.dark-theme .ota-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ota-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            border-radius: 16px;
+            padding: 1.2rem;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-theme .ota-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .ota-info h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .ota-info p {
+            font-size: 0.8rem;
+            opacity: 0.75;
+        }
+
+        .ota-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            background: rgba(15, 23, 42, 0.1);
+        }
+
+        .ota-badge.up-to-date {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+
+        .ota-badge.update-available {
+            background: rgba(245, 158, 11, 0.15);
+            color: #D97706;
+            animation: pulse 2s infinite;
+        }
+
+        .ota-badge.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #DC2626;
+        }
+
+        .ota-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .ota-actions button {
+            background: #2563EB;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ota-actions button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .ota-actions button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #btn-ota-update {
+            background: #10B981;
+        }
+
+        #btn-ota-update:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
@@ -466,6 +575,21 @@
             <div class="regions-grid" id="buttons-grid" role="group" aria-label="Selector de regiones">
                 <!-- Buttons will be populated dynamically -->
             </div>
+        </section>
+
+        <!-- Panel de Actualizaciones OTA (Over-The-Air) -->
+        <section class="ota-section">
+            <div class="ota-card">
+                <div class="ota-info">
+                    <h3>Actualización de Firmware (OTA)</h3>
+                    <p>Versión local: <span id="ota-version">1.0.0</span> <span id="ota-status-badge" class="ota-badge">Verificando...</span></p>
+                </div>
+                <div class="ota-actions">
+                    <button id="btn-ota-check" onclick="checkOTA(true)">Buscar Actualizaciones</button>
+                    <button id="btn-ota-update" onclick="startOTA()" style="display: none;">Instalar Actualización</button>
+                </div>
+            </div>
+            <div id="ota-progress-msg" style="display: none; font-size: 0.8rem; margin-top: 0.5rem; color: #6366F1; font-weight: 500;"></div>
         </section>
 
     </div>
@@ -692,10 +816,104 @@
             }
         }
 
+        // OTA Functions
+        async function checkOTA(isManual = false) {
+            const statusBadge = document.getElementById("ota-status-badge");
+            const btnCheck = document.getElementById("btn-ota-check");
+            const btnUpdate = document.getElementById("btn-ota-update");
+            const versionSpan = document.getElementById("ota-version");
+            const progressMsg = document.getElementById("ota-progress-msg");
+            
+            if (isManual) {
+                statusBadge.textContent = "Verificando...";
+                statusBadge.className = "ota-badge";
+                btnCheck.disabled = true;
+            }
+            
+            try {
+                const response = await fetch("/api/ota/check");
+                const data = await response.json();
+                
+                if (data.success) {
+                    versionSpan.textContent = data.local_version;
+                    if (data.update_available) {
+                        statusBadge.textContent = `Actualización disponible: v${data.remote_version}`;
+                        statusBadge.className = "ota-badge update-available";
+                        btnUpdate.style.display = "block";
+                    } else {
+                        statusBadge.textContent = "Actualizado";
+                        statusBadge.className = "ota-badge up-to-date";
+                        btnUpdate.style.display = "none";
+                    }
+                } else {
+                    statusBadge.textContent = "Error al verificar";
+                    statusBadge.className = "ota-badge error";
+                    console.error("OTA error:", data.error);
+                }
+            } catch (err) {
+                statusBadge.textContent = "Error de red";
+                statusBadge.className = "ota-badge error";
+                console.error("OTA fetch error:", err);
+            } finally {
+                btnCheck.disabled = false;
+            }
+        }
+
+        async function startOTA() {
+            if (!confirm("¿Deseas iniciar la actualización de firmware? El dispositivo descargará los archivos y se reiniciará.")) {
+                return;
+            }
+            
+            const statusBadge = document.getElementById("ota-status-badge");
+            const btnCheck = document.getElementById("btn-ota-check");
+            const btnUpdate = document.getElementById("btn-ota-update");
+            const progressMsg = document.getElementById("ota-progress-msg");
+            
+            btnCheck.disabled = true;
+            btnUpdate.disabled = true;
+            statusBadge.textContent = "Actualizando...";
+            statusBadge.className = "ota-badge update-available";
+            progressMsg.style.display = "block";
+            progressMsg.textContent = "Descargando archivos en el dispositivo. No apague el sistema...";
+            
+            try {
+                const response = await fetch("/api/ota/update");
+                const data = await response.json();
+                
+                if (data.success) {
+                    progressMsg.textContent = "¡Actualización completada! Reiniciando dispositivo en 2 segundos...";
+                    progressMsg.style.color = "#10B981";
+                    statusBadge.textContent = "Reiniciando...";
+                    statusBadge.className = "ota-badge up-to-date";
+                    
+                    // Recargar la página después de 8 segundos
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 8000);
+                } else {
+                    progressMsg.textContent = `Fallo en la actualización: ${data.message || data.error}`;
+                    progressMsg.style.color = "#DC2626";
+                    statusBadge.textContent = "Error";
+                    statusBadge.className = "ota-badge error";
+                    btnCheck.disabled = false;
+                    btnUpdate.disabled = false;
+                }
+            } catch (err) {
+                progressMsg.textContent = "Fallo en la conexión durante la actualización.";
+                progressMsg.style.color = "#DC2626";
+                statusBadge.textContent = "Error de conexión";
+                statusBadge.className = "ota-badge error";
+                btnCheck.disabled = false;
+                btnUpdate.disabled = false;
+            }
+        }
+
         // Initialize
         renderButtons();
         // Load default region (Ubicación Actual) on startup
         selectRegion("actual");
+        // Check for updates automatically on load
+        setTimeout(checkOTA, 1500);
     </script>
 </body>
 </html>

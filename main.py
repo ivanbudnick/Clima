@@ -9,6 +9,7 @@ import config
 import wifi_manager
 from led_control import LEDController
 import weather_client
+import ota_updater
 
 # Ejecutar recolección de basura inicial
 gc.collect()
@@ -250,6 +251,31 @@ while True:
             except Exception as e:
                 print("[Server] Error consultando el clima: {}".format(e))
                 send_error(client_sock, 500, str(e))
+                
+        elif base_path == "/api/ota/check":
+            try:
+                res = ota_updater.check_update(config.OTA_BASE_URL)
+                send_json(client_sock, res)
+            except Exception as e:
+                send_json(client_sock, {"success": False, "error": str(e)})
+
+        elif base_path == "/api/ota/update":
+            try:
+                success, msg = ota_updater.perform_ota_update(config.OTA_BASE_URL)
+                send_json(client_sock, {"success": success, "message": msg})
+                if success:
+                    client_sock.close()
+                    print("[Server] Reiniciando tras actualizacion en 2 segundos...")
+                    time.sleep(2)
+                    if ota_updater.IS_MICROPYTHON:
+                        import machine
+                        machine.reset()
+                    else:
+                        print("[Server] Entorno PC: Saliendo del proceso.")
+                        sys.exit(0)
+            except Exception as e:
+                send_json(client_sock, {"success": False, "error": str(e)})
+                
         else:
             send_error(client_sock, 404, "Not Found")
             
