@@ -8,12 +8,13 @@ Este documento detalla la planificación, componentes y el conexionado necesario
 
 ### De tu Inventario
 
-* **Microcontrolador**: `Módulo ESP32 / ESP8266 (NodeMCU / DevKit)` (Modelo específico seleccionado: **NodeMCU ESP8266 4MB ESP-12E WiFi PWM I2C** [Foto de origen: IMG_5031.jpeg](file:///Users/ivanbudnick/Documents/Inventario/IMG_5031.jpeg)). Encargado del control lógico y la conectividad inalámbrica del proyecto.
+* **Microcontrolador**: `Módulo ESP32 / ESP8266 (NodeMCU / DevKit)` (Modelo específico seleccionado: **NodeMCU ESP8266 4MB ESP-12E WiFi PWM I2C** [Foto de origen: IMG_5031.jpeg](file:///Users/ivanbudnick/Documents/Inventario/fotos/IMG_5031.jpeg)). Encargado del control lógico y la conectividad inalámbrica del proyecto.
 * **Tira LED**: `Tira de LED RGB Digital` (2.5 metros con 75 LEDs, protocolo WS2811). Cuenta con sus 3 cables pre-soldados en el extremo.
 * **Fuente de Alimentación**: `Fuente de alimentación / Adaptador AC/DC (Sagemcom)` (Salida: 12V 2.0A). Soporta perfectamente la corriente requerida por la tira.
 * **Conector de Corriente**: `Conector Jack DC hembra para chasis (DC-022)` (para recibir la ficha de la fuente de 12V sin cortarla).
 * **Módulo Regulador Step-Down (Buck Converter)**: `Módulo Regulador Step-Down DC-DC LM2596 (HW-411)`. Reduce los 12V de la fuente principal a 5V para alimentar el microcontrolador por su pin `VIN` / `5V`.
 * **Condensador Electrolítico**: `Capacitor Electrolítico 2200 µF / 16V`. Se conecta en paralelo a las líneas de alimentación de la tira LED para absorber picos de corriente. *(Nota: El voltaje de 16V tiene menor margen de seguridad sobre los 12V de alimentación que un capacitor de 25V, por lo que es crítico respetar estrictamente la polaridad en la conexión).*
+* **Conversor de Nivel Lógico (Level Shifter)**: `Conversor de Nivel Lógico / Buffer Cuádruple 74HCT125 (GD74HCT125)` ([Foto de origen: IMG_5092.jpg](file:///Users/ivanbudnick/Documents/Inventario/fotos/IMG_5092.jpg)). Adaptador de nivel lógico DIP-14 para elevar la señal de datos de 3.3V del microcontrolador a los 5V que requiere la tira LED WS2811, previniendo parpadeos e inestabilidad en la transmisión.
 * **Componentes Pasivos**:
   * `Resistencia de 470 Ω` o `220 Ω` (de tu pack de resistencias surtidas, para la línea de datos DIN).
 * **Montaje y Pruebas**:
@@ -25,9 +26,7 @@ Este documento detalla la planificación, componentes y el conexionado necesario
 
 ### Sugeridos para Adquirir
 
-1. **Conversor de Nivel Lógico (Level Shifter 3.3V a 5V)** (ej. `74HCT125` o `74AHCT125` en formato DIP-14):
-   * *Justificación*: Eleva la señal de datos de 3.3V del microcontrolador a los 5V que requiere el chip WS2811 de la tira LED, previniendo parpadeos y ruidos en la señal a alta velocidad (800 kHz).
-   * *Nota*: Es muy importante que sea la variante con la letra **T** intermedia (**HCT** o **AHCT**) para que detecte correctamente los 3.3V del microcontrolador como nivel lógico alto estando alimentado a 5V. Aunque es factible implementar de forma temporal el "truco del diodo 1N4007" o un circuito con transistores NPN 2N2222 y resistencias de tu inventario, adquirir el integrado dedicado asegura la estabilidad definitiva de la señal.
+*Actualmente no hay componentes pendientes por adquirir; todos los componentes recomendados ya forman parte de tu inventario.
 
 ---
 
@@ -62,6 +61,15 @@ Este documento detalla la planificación, componentes y el conexionado necesario
    * Colocar una **resistencia de 470 Ω** (o 220 Ω) en la protoboard:
      * Un extremo va conectado al pin digital de salida del NodeMCU ESP8266 (ej. pin **D4**, que corresponde internamente a `GPIO 2`).
      * El otro extremo va conectado a la columna de la protoboard donde se insertó el **cable de datos (DIN)** de la tira LED.
+   * **Conexión del Conversor de Nivel Lógico 74HCT125 (DIP-14)**:
+     Para realizar una adaptación de señal segura y estable de 3.3V a 5V mediante el chip 74HCT125:
+     * Conectar el **Pin 14 (VCC)** del integrado a la línea de **+5V** (salida del Step-Down).
+     * Conectar el **Pin 7 (GND)** del integrado a la línea de **GND** común de la protoboard.
+     * Conectar el **Pin 1 (1OE - Output Enable 1)** a la línea de **GND** (para habilitar de forma permanente la salida del canal 1).
+     * Conectar el **Pin 2 (1A - Entrada del Canal 1)** al pin digital **D4 (GPIO 2)** del NodeMCU ESP8266.
+     * Conectar el **Pin 3 (1Y - Salida del Canal 1)** a un extremo de la **resistencia de 470 Ω** (o 220 Ω).
+     * Conectar el otro extremo de la resistencia a la columna de la protoboard donde está conectado el **cable de datos central (DIN)** de la tira LED.
+     * *(Práctica recomendada)* Conectar a **GND** todos los pines de control e entrada no utilizados del integrado (pines 4, 5, 9, 10, 12 y 13) para evitar tensiones flotantes y acoples de ruido.
 
 ---
 

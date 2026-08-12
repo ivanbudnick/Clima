@@ -58,5 +58,11 @@
     "cantidad": 1,
     "notas": "Interruptor de paso instalado en el cable de la fuente para cortar físicamente la corriente de alimentación al circuito.",
     "foto_origen": "IMG_5050.jpeg"
+  },
+  {
+    "componente": "Conversor de Nivel Lógico / Buffer Cuádruple 74HCT125 (GD74HCT125)",
+    "cantidad": 1,
+    "notas": "Conversor de nivel lógico DIP-14 para adaptar la señal de datos del ESP8266 (3.3V) a los 5V requeridos por la tira LED WS2811, previniendo parpadeos y ruidos en la señal.",
+    "foto_origen": "IMG_5092.jpg"
   }
 ]
