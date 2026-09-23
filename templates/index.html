@@ -835,8 +835,8 @@
                             </span>
                         </div>
                         <div class="led-detail-row">
-                            <span class="led-detail-label">Orden Físico de Salida (RBG):</span>
-                            <span class="led-detail-val" id="txt-grb-tuple">(38, 0, 27)</span>
+                            <span class="led-detail-label">Orden Físico de Salida (RGB):</span>
+                            <span class="led-detail-val" id="txt-grb-tuple">(38, 27, 0)</span>
                         </div>
                     </div>
                 </div>
@@ -1443,8 +1443,8 @@
             document.getElementById("txt-phys-rgb").textContent = `RGB(${rPhys}, ${gPhys}, ${bPhys})`;
             document.getElementById("badge-phys").style.backgroundColor = `rgb(${rPhys}, ${gPhys}, ${bPhys})`;
 
-            // Physical RBG channel mapping: (Red, Blue, Green)
-            document.getElementById("txt-grb-tuple").textContent = `(R:${rPhys}, B:${bPhys}, G:${gPhys})`;
+            // Physical RGB channel mapping: (Red, Green, Blue)
+            document.getElementById("txt-grb-tuple").textContent = `(R:${rPhys}, G:${gPhys}, B:${bPhys})`;
         }
 
         // Helper WMO description map

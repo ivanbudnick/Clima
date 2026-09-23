@@ -12,9 +12,9 @@ pin_num = getattr(config, 'LED_PIN', 2)
 TEST_LEDS = 5        # Probar solo los primeros 5 píxeles
 TOTAL_LEDS = 25      # Enviar apagado al resto de la tira para limpiar ruido
 factor = getattr(config, 'FACTOR_BRILLO', 0.15)
-order = getattr(config, 'COLOR_ORDER', 'RBG')
+order = getattr(config, 'COLOR_ORDER', 'RGB')
 
-print(f"[Configuración] Pin: GPIO {pin_num} | Probando primeros: {TEST_LEDS} LEDs | Brillo: {int(factor*100)}% | Tiempo: 5s por color\n")
+print(f"[Configuración] Orden de Color: {order} | Pin: GPIO {pin_num} | Probando primeros: {TEST_LEDS} LEDs | Brillo: {int(factor*100)}% | Tiempo: 5s por color\n")
 
 pin = machine.Pin(pin_num, machine.Pin.OUT)
 np = neopixel.NeoPixel(pin, TOTAL_LEDS)
