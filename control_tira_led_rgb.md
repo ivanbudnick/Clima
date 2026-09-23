@@ -32,44 +32,124 @@ Este documento detalla la planificación, componentes y el conexionado necesario
 
 ## 🔌 Esquema del Conexionado
 
-### Identificación de los 3 cables de la Tira LED:
+### 💡 Justificación y Función de los Componentes en el Circuito
+Para armar correctamente el circuito, es fundamental entender para qué sirve cada parte en las conexiones eléctricas:
+* **Fuente de Alimentación (12V 2.0A)**: Suministra la energía principal. La tira LED funciona a 12V y puede consumir corrientes de hasta ~1.8A.
+* **Conector Jack DC Hembra (DC-022)**: Funciona como el puerto físico de entrada de la corriente para no tener que cortar la ficha original de la fuente.
+* **Interruptor de Paso**: Permite el corte físico de la alimentación del circuito. Puede ir en los 220V o en la línea de 12V.
+* **Capacitor Electrolítico (2200 µF / 16V)**: Actúa como un reservorio rápido de energía en la línea de 12V para amortiguar las caídas de tensión bruscas causadas por los rápidos cambios de brillo/color en los LEDs. *Nota de seguridad: al estar cerca del límite de 16V, respeta estrictamente su polaridad (+ y -) para evitar fallas.*
+* **Módulo Regulador Step-Down DC-DC LM2596 (HW-411)**: Reduce de manera eficiente los 12V principales a 5V estables. Es necesario porque el microcontrolador y el conversor lógico no toleran 12V y se dañarían.
+* **NodeMCU ESP8266**: El cerebro del proyecto. Controla la lógica de colores, brillo y efectos, y ofrece conectividad WiFi.
+* **Conversor de Nivel Lógico (GD74HCT125)**: Eleva la señal de datos digital de 3.3V (salida del NodeMCU) a los 5V (nivel lógico TTL) que requiere la tira WS2811. Esto previene destellos aleatorios ("flicker") o pérdidas de señal.
+* **Resistencia de 470 Ω o 220 Ω**: Ubicada en serie en la línea de datos (`DIN`) justo antes del primer LED. Protege la entrada lógica de picos de voltaje y atenúa rebotes de señal en el cable.
+* **Tira de LED RGB Digital (WS2811 12V)**: El elemento de iluminación final que interpreta y muestra las señales recibidas.
+
+### 🗺️ Diagrama de Conexiones (Esquema del Circuito)
+A continuación se detalla cómo deben realizarse las conexiones físicas. Un punto sumamente crítico es tener una **Masa (GND) Común** para unificar el circuito de control (5V) con el de potencia (12V):
+
+```mermaid
+graph TD
+    %% Estilos de bloques
+    classDef pwr fill:#ffe6cc,stroke:#d79b00,stroke-width:2px,color:#000;
+    classDef ctrl fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px,color:#000;
+    classDef led fill:#d5e8d4,stroke:#82b366,stroke-width:2px,color:#000;
+    classDef pass fill:#f5f5f5,stroke:#666666,stroke-width:1px,color:#000;
+
+    %% Nodos principales
+    subgraph Entrada ["Alimentación Principal"]
+        Jack[Jack DC Hembra DC-022]
+        Switch[Interruptor de Paso]
+    end
+
+    subgraph Regulador ["Conversión de Voltaje"]
+        StepDown[Regulador Step-Down LM2596]
+    end
+
+    subgraph Cerebro ["Controlador"]
+        NodeMCU[NodeMCU ESP8266]
+    end
+
+    subgraph Adaptador ["Adaptador de Señal"]
+        Shifter[GD74HCT125 Level Shifter]
+    end
+
+    subgraph Salida ["Iluminación y Protección"]
+        Cap[Capacitor 2200uF 16V]
+        Res[Resistencia 470 Ohm]
+        TiraLED[Tira LED WS2811 12V]
+    end
+
+    %% Conexiones de Alimentación 12V
+    Jack -- "+12V" --> Switch
+    Switch -- "+12V" --> Cap_Pos["+ (Pata larga)"]
+    Cap_Pos --> TiraLED_12V[Cable Rojo +12V]
+    Switch -- "+12V" --> StepDown_IN_Pos[IN+]
+    
+    Jack -- "GND" --> GND_Bus["Riel GND Común (Protoboard)"]
+    GND_Bus --> Cap_Neg["- (Pata corta)"]
+    Cap_Neg --> TiraLED_GND[Cable Negro GND]
+    GND_Bus --> StepDown_IN_Neg[IN-]
+    
+    %% Conexiones 5V (Salida StepDown)
+    StepDown_OUT_Pos[OUT+ 5V] --> Riel_5V["Riel +5V (Protoboard)"]
+    StepDown_OUT_Neg[OUT- GND] --> GND_Bus
+    
+    Riel_5V --> NodeMCU_VIN[VIN / 5V]
+    Riel_5V --> Shifter_VCC[Pin 14 VCC]
+    GND_Bus --> NodeMCU_GND[GND]
+    GND_Bus --> Shifter_GND[Pin 7 GND]
+    GND_Bus --> Shifter_1OE[Pin 1 1OE]
+
+    %% Conexiones de Señal de Datos
+    NodeMCU -- "GPIO 2 (Pin D4)" --> Shifter_1A[Pin 2 1A]
+    Shifter_1Y[Pin 3 1Y] -- "Datos 5V" --> Res
+    Res -- "Datos Protegidos" --> TiraLED_DIN[Cable Verde/Amarillo DIN]
+
+    %% Pines de control sobrantes a GND (Buenas prácticas en el chip 74HCT125)
+    GND_Bus -. "Silenciar pines no usados" .-> Shifter_Pines[Pines 4, 5, 9, 10, 12, 13]
+
+    %% Asignar Clases
+    class Jack,Switch,StepDown,Cap pwr;
+    class NodeMCU ctrl;
+    class Shifter,Res pass;
+    class TiraLED led;
+```
+
+### 📋 Identificación de Cables de la Tira LED:
 * **Cable Rojo**: Entrada de Alimentación Positiva (`+12V`).
 * **Cable Negro** (o Blanco): Masa/Retorno (`GND`).
 * **Cable Central** (Verde o Amarillo): Línea de datos direccionable (`DIN` / `Data`).
 
-### Esquema de Conexiones:
+### 🛠️ Pasos para el Armado Físico (Paso a Paso):
 
 1. **Preparación de Alimentación e Interruptor**:
    * **Opción con interruptor en 12V**: 
-     * Soldar un cable al pin negativo (`GND`) del **Jack DC Hembra (DC-022)** y llevarlo a la **línea azul/negra (GND)** de la protoboard.
-     * Soldar un cable al pin positivo (`+12V`) del Jack DC, conectarlo a un extremo del **interruptor de paso**, y desde el otro extremo del interruptor llevar un cable hacia la **línea roja (+12V)** de la protoboard.
+     * Soldar un cable al pin negativo (`GND`) del **Jack DC Hembra (DC-022)** y llevarlo a la **línea de GND común** de la protoboard.
+     * Soldar un cable al pin positivo (`+12V`) del Jack DC, conectarlo a un extremo del **interruptor de paso**, y desde el otro extremo llevarlo hacia la **línea roja (+12V)** de la protoboard.
    * **Opción con interruptor en 220V (Recomendada)**:
      * Instalar el interruptor de velador interrumpiendo una de las fases del cable de red (220V) antes de la fuente de alimentación.
      * Soldar directamente los terminales positivo y negativo del Jack DC Hembra a las líneas de alimentación (`+12V` y `GND`) de la protoboard.
 
 2. **Conexión de la Tira LED**:
-   * Conectar el **cable positivo (+12V)** de la tira (Rojo) a la **línea de +12V** de la protoboard.
-   * Conectar el **cable de masa (GND)** de la tira (Negro) a la **línea de GND** de la protoboard.
+   * Conectar el **cable positivo (+12V)** de la tira (Rojo) al riel de **+12V** de la protoboard.
+   * Conectar el **cable de masa (GND)** de la tira (Negro) al riel de **GND** de la protoboard.
    * Conectar el **cable de datos central (DIN)** de la tira (Verde/Amarillo) a una columna vacía y aislada de la protoboard.
+   * Colocar el **Capacitor de 2200 µF** con su pata positiva en la línea de +12V y su pata negativa en la línea de GND, lo más cerca posible de los cables de alimentación de la tira LED.
 
 3. **Conexión del Microcontrolador (NodeMCU ESP8266)**:
    * Insertar el NodeMCU ESP8266 en la protoboard.
-   * Conectar un pin **GND** del microcontrolador a la **línea de GND** de la protoboard (para unificar masas comunes).
-   * *Alimentación*: Inicialmente alimentarlo por USB. Para el armado definitivo, conectar la salida regulada de 5V del Step-Down al pin **VIN** (o **5V**) y el pin **GND** del NodeMCU.
+   * Conectar un pin **GND** del microcontrolador al riel de **GND** de la protoboard.
+   * *Alimentación definitiva:* Conectar la salida regulada de 5V del Step-Down (OUT+) al pin **VIN** (o **5V**) y la masa (OUT-) al riel de **GND** común.
 
-4. **Línea de Datos (DIN)**:
-   * Colocar una **resistencia de 470 Ω** (o 220 Ω) en la protoboard:
-     * Un extremo va conectado al pin digital de salida del NodeMCU ESP8266 (ej. pin **D4**, que corresponde internamente a `GPIO 2`).
-     * El otro extremo va conectado a la columna de la protoboard donde se insertó el **cable de datos (DIN)** de la tira LED.
-   * **Conexión del Conversor de Nivel Lógico 74HCT125 (DIP-14)**:
-     Para realizar una adaptación de señal segura y estable de 3.3V a 5V mediante el chip 74HCT125:
-     * Conectar el **Pin 14 (VCC)** del integrado a la línea de **+5V** (salida del Step-Down).
-     * Conectar el **Pin 7 (GND)** del integrado a la línea de **GND** común de la protoboard.
-     * Conectar el **Pin 1 (1OE - Output Enable 1)** a la línea de **GND** (para habilitar de forma permanente la salida del canal 1).
-     * Conectar el **Pin 2 (1A - Entrada del Canal 1)** al pin digital **D4 (GPIO 2)** del NodeMCU ESP8266.
-     * Conectar el **Pin 3 (1Y - Salida del Canal 1)** a un extremo de la **resistencia de 470 Ω** (o 220 Ω).
-     * Conectar el otro extremo de la resistencia a la columna de la protoboard donde está conectado el **cable de datos central (DIN)** de la tira LED.
-     * *(Práctica recomendada)* Conectar a **GND** todos los pines de control e entrada no utilizados del integrado (pines 4, 5, 9, 10, 12 y 13) para evitar tensiones flotantes y acoples de ruido.
+4. **Línea de Datos y Conversor de Nivel Lógico (74HCT125)**:
+   * Insertar el integrado 74HCT125 en la protoboard (cruzando el canal central de aislamiento).
+   * Conectar el **Pin 14 (VCC)** al riel de **+5V** (salida del Step-Down).
+   * Conectar el **Pin 7 (GND)** al riel de **GND** común de la protoboard.
+   * Conectar el **Pin 1 (1OE - Output Enable)** a **GND** (para habilitar el buffer número 1).
+   * Conectar el **Pin 2 (1A - Entrada del Buffer 1)** al pin digital **D4 (GPIO 2)** del NodeMCU.
+   * Conectar el **Pin 3 (1Y - Salida del Buffer 1)** a un extremo de la **resistencia de 470 Ω** (o 220 Ω).
+   * Conectar el otro extremo de la resistencia a la columna de la protoboard donde se conectó el **cable de datos central (DIN)** de la tira LED.
+   * *(Recomendación para evitar ruido):* Conectar los pines de entrada y habilitación no utilizados (pines 4, 5, 9, 10, 12 y 13) a la línea de **GND**.
 
 ---
 

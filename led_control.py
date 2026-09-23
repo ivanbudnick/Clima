@@ -58,7 +58,7 @@ class LEDController:
             g_target = int(g * factor)
             b_target = int(b * factor)
             
-            order = getattr(config, 'COLOR_ORDER', 'GRB')
+            order = getattr(config, 'COLOR_ORDER', 'RBG')
             for i in range(self.led_count):
                 if order == 'GRB':
                     self.np[i] = (g_target, r_target, b_target)
@@ -89,7 +89,7 @@ class LEDController:
             b_target = int(b * factor)
             
             r_start, g_start, b_start = self.current_physical
-            order = getattr(config, 'COLOR_ORDER', 'GRB')
+            order = getattr(config, 'COLOR_ORDER', 'RBG')
             
             steps = 15
             for step in range(1, steps + 1):
@@ -125,7 +125,7 @@ class LEDController:
         self.last_tick = now
         
         factor = getattr(config, 'FACTOR_BRILLO', 0.15)
-        order = getattr(config, 'COLOR_ORDER', 'GRB')
+        order = getattr(config, 'COLOR_ORDER', 'RBG')
         
         if self.mode in ("RAIN", "DRIZZLE", "THUNDERSTORM"):
             # Lluvia / Tormenta: Tono violeta oscuro con titileo dinámico independiente por unidad

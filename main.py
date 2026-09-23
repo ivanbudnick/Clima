@@ -251,8 +251,57 @@ while True:
             except Exception as e:
                 print("[Server] Error consultando el clima: {}".format(e))
                 send_error(client_sock, 500, str(e))
+
+        elif base_path == "/api/weather/custom":
+            try:
+                code = int(params.get("weather_code", "0"))
+                is_day = int(params.get("is_day", "1"))
+                temp = float(params.get("temperature", "22.0"))
+                
+                visuals = config.get_weather_info(code, is_day)
+                
+                r_val = params.get("r")
+                g_val = params.get("g")
+                b_val = params.get("b")
+                
+                if r_val is not None and g_val is not None and b_val is not None:
+                    led_color = (int(r_val), int(g_val), int(b_val))
+                else:
+                    led_color = visuals["led_color"]
+                    
+                print("[Server] Custom preset/slider -> Code: {}, Day: {}, Temp: {} C, RGB: {}".format(code, is_day, temp, led_color))
+                led_strip.set_mode(visuals["color_key"], led_color)
+                
+                response_data = {
+                    "region_key": "custom",
+                    "region_name": "Configuracion Personalizada",
+                    "temperature": temp,
+                    "weather_code": code,
+                    "is_day": is_day,
+                    "description": visuals["description"],
+                    "color_key": visuals["color_key"],
+                    "web_color": visuals["web_color"],
+                    "led_color": led_color,
+                    "raw_payload": {
+                        "latitude": 0.0,
+                        "longitude": 0.0,
+                        "current_weather": {
+                            "temperature": temp,
+                            "weathercode": code,
+                            "is_day": is_day,
+                            "time": "Custom / Slider Override"
+                        },
+                        "custom_override": True,
+                        "led_rgb": led_color
+                    }
+                }
+                send_json(client_sock, response_data)
+            except Exception as e:
+                print("[Server] Error en /api/weather/custom: {}".format(e))
+                send_error(client_sock, 500, str(e))
                 
         elif base_path == "/api/ota/check":
+
             try:
                 res = ota_updater.check_update(config.OTA_BASE_URL)
                 send_json(client_sock, res)

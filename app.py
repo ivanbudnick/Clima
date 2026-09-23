@@ -81,6 +81,63 @@ def api_weather():
         print(f"[Backend] Error en api_weather: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/weather/custom")
+def api_weather_custom():
+    """
+    API endpoint: /api/weather/custom?weather_code=X&is_day=Y&temperature=Z&r=R&g=G&b=B
+    Receives custom weather/LED parameters (from presets or sliders), updates the LED strip,
+    and returns formatted response data.
+    """
+    try:
+        code = int(request.args.get("weather_code", 0))
+        is_day = int(request.args.get("is_day", 1))
+        temp = float(request.args.get("temperature", 22.0))
+        
+        visuals = config.get_weather_info(code, is_day)
+        
+        # Check if custom RGB override was provided
+        r_arg = request.args.get("r")
+        g_arg = request.args.get("g")
+        b_arg = request.args.get("b")
+        
+        if r_arg is not None and g_arg is not None and b_arg is not None:
+            led_color = (int(r_arg), int(g_arg), int(b_arg))
+        else:
+            led_color = visuals["led_color"]
+            
+        print(f"[Backend] Ajuste personalizado recibido: Code={code}, Day={is_day}, Temp={temp}°C, RGB={led_color}")
+        led_strip.set_color(*led_color)
+        
+        response_data = {
+            "region_key": "custom",
+            "region_name": f"Configuración Personalizada ({visuals['description']})",
+            "temperature": temp,
+            "weather_code": code,
+            "is_day": is_day,
+            "description": visuals["description"],
+            "color_key": visuals["color_key"],
+            "web_color": visuals["web_color"],
+            "led_color": led_color,
+            "raw_payload": {
+                "latitude": 0.0,
+                "longitude": 0.0,
+                "current_weather": {
+                    "temperature": temp,
+                    "weathercode": code,
+                    "is_day": is_day,
+                    "time": "Custom / Slider Override"
+                },
+                "custom_override": True,
+                "led_rgb": led_color
+            }
+        }
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"[Backend] Error en api_weather_custom: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     # Run server locally on port 5000
     print("=" * 60)

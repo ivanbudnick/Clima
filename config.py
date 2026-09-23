@@ -15,7 +15,7 @@ POLL_INTERVAL_SECS = 900
 LED_PIN = 2
 LED_COUNT = 6
 FACTOR_BRILLO = 0.15  # Factor de brillo de seguridad (15%) por falta de capacitor
-COLOR_ORDER = "GRB"   # Orden de color físico: "RGB", "GRB", o "BRG"
+COLOR_ORDER = "RBG"   # Orden de color físico: "RGB", "GRB", "BRG" o "RBG"
 
 
 # 8 Preset Regions (1 auto-detected, 7 representative locations)
