@@ -6,12 +6,15 @@ import socket
 import network
 
 import config
-import wifi_manager
-from led_control import LEDController
-import weather_client
-import ota_updater
+gc.collect()
 
-# Ejecutar recolección de basura inicial
+import wifi_manager
+gc.collect()
+
+from led_control import LEDController
+gc.collect()
+
+import weather_client
 gc.collect()
 
 print("="*60)
@@ -36,6 +39,7 @@ if not connected:
 # 1.5. Comprobar automáticamente actualizaciones OTA en GitHub
 try:
     print("[Main] Comprobando actualizaciones OTA en GitHub...")
+    import ota_updater
     res = ota_updater.check_update(config.OTA_BASE_URL)
     if res.get("update_available"):
         print("[Main] ¡Nueva versión {} detectada! Descargando actualización...".format(res.get("remote_version")))
@@ -43,11 +47,12 @@ try:
         if success:
             print("[Main] Actualización exitosa. Reiniciando equipo...")
             time.sleep(1)
-            if ota_updater.IS_MICROPYTHON:
-                import machine
-                machine.reset()
+            import machine
+            machine.reset()
 except Exception as e:
     print("[Main] Omite actualización automática al arrancar: {}".format(e))
+finally:
+    gc.collect()
 
 # 2. Inicializar controlador físico de NeoPixel
 # En config.py definimos LED_PIN = 2 y LED_COUNT = 6
@@ -320,15 +325,18 @@ while True:
                 send_error(client_sock, 500, str(e))
                 
         elif base_path == "/api/ota/check":
-
             try:
+                import ota_updater
                 res = ota_updater.check_update(config.OTA_BASE_URL)
                 send_json(client_sock, res)
             except Exception as e:
                 send_json(client_sock, {"success": False, "error": str(e)})
+            finally:
+                gc.collect()
 
         elif base_path == "/api/ota/update":
             try:
+                import ota_updater
                 success, msg = ota_updater.perform_ota_update(config.OTA_BASE_URL)
                 send_json(client_sock, {"success": success, "message": msg})
                 if success:
@@ -343,6 +351,8 @@ while True:
                         sys.exit(0)
             except Exception as e:
                 send_json(client_sock, {"success": False, "error": str(e)})
+            finally:
+                gc.collect()
                 
         else:
             send_error(client_sock, 404, "Not Found")
