@@ -73,7 +73,8 @@ def send_error(client_socket, status_code, message):
         print("[Server] Error enviando respuesta 500/404: {}".format(e))
 
 def send_file(client_socket, filepath, content_type):
-    """Transmite un archivo en fragmentos de 1024 bytes para ahorrar RAM en el ESP8266."""
+    """Transmite un archivo en fragmentos de 512 bytes para ahorrar RAM en el ESP8266."""
+    gc.collect()
     try:
         with open(filepath, 'rb') as f:
             headers = "HTTP/1.1 200 OK\r\n"
@@ -82,13 +83,12 @@ def send_file(client_socket, filepath, content_type):
             client_socket.sendall(headers.encode('utf-8'))
             
             while True:
-                chunk = f.read(1024)
+                chunk = f.read(512)
                 if not chunk:
                     break
                 client_socket.sendall(chunk)
                 gc.collect()
     except OSError:
-        # Fallback por si index.html está en la raíz en vez de templates/
         if "/" in filepath:
             fallback_path = filepath.split("/")[-1]
             try:
@@ -98,7 +98,7 @@ def send_file(client_socket, filepath, content_type):
                     headers += "Connection: close\r\n\r\n"
                     client_socket.sendall(headers.encode('utf-8'))
                     while True:
-                        chunk = f.read(1024)
+                        chunk = f.read(512)
                         if not chunk:
                             break
                         client_socket.sendall(chunk)
@@ -109,6 +109,8 @@ def send_file(client_socket, filepath, content_type):
         
         print("[Server] No se pudo encontrar el archivo: {}".format(filepath))
         send_error(client_socket, 404, "File Not Found")
+    finally:
+        gc.collect()
 
 def send_json(client_socket, data):
     """Codifica y envía un diccionario Python en formato JSON con cabeceras HTTP."""
