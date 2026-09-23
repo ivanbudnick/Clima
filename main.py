@@ -18,6 +18,9 @@ print("="*60)
 print("  INICIANDO SERVIDOR DE CLIMA Y LEDS EN NODEMCU ESP8266  ")
 print("="*60)
 
+# Pausa de seguridad de 2 segundos para permitir interrupción limpia desde Thonny (Ctrl+C)
+time.sleep(2)
+
 # 1. Conectar a la red Wi-Fi
 print("[Main] Conectando a la red Wi-Fi...")
 connected = wifi_manager.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD, config.WIFI_TIMEOUT_SECS)
@@ -29,6 +32,22 @@ if not connected:
     print("   WIFI_PASSWORD = \"Tu_Contrasena\"")
     print("!"*60 + "\n")
     sys.exit(1)
+
+# 1.5. Comprobar automáticamente actualizaciones OTA en GitHub
+try:
+    print("[Main] Comprobando actualizaciones OTA en GitHub...")
+    res = ota_updater.check_update(config.OTA_BASE_URL)
+    if res.get("update_available"):
+        print("[Main] ¡Nueva versión {} detectada! Descargando actualización...".format(res.get("remote_version")))
+        success, msg = ota_updater.perform_ota_update(config.OTA_BASE_URL)
+        if success:
+            print("[Main] Actualización exitosa. Reiniciando equipo...")
+            time.sleep(1)
+            if ota_updater.IS_MICROPYTHON:
+                import machine
+                machine.reset()
+except Exception as e:
+    print("[Main] Omite actualización automática al arrancar: {}".format(e))
 
 # 2. Inicializar controlador físico de NeoPixel
 # En config.py definimos LED_PIN = 2 y LED_COUNT = 6
