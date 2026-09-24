@@ -35,6 +35,12 @@
         .btn-preset { background: #374151; border: none; color: #fff; padding: 10px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
         .btn-preset:hover { background: #4b5563; }
         .btn-preset.active { background: #0284c7; }
+
+        /* Switch de Diagnóstico de Orden de Canales */
+        .order-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 10px; border: 1px solid var(--border); }
+        .btn-order { background: transparent; border: none; color: var(--text-dim); padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .btn-order.active { background: #d97706; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .btn-order:hover:not(.active) { color: #fff; background: rgba(255,255,255,0.05); }
         
         .ota-box { border-top: 1px solid var(--border); pt: 16px; margin-top: 16px; }
         .btn-ota { background: #059669; width: 100%; border: none; color: #fff; padding: 10px; border-radius: 10px; font-weight: 600; margin-top: 8px; cursor: pointer; }
@@ -67,6 +73,15 @@
         <div class="color-preview" id="led-preview"></div>
     </div>
 
+    <!-- Switch Diagnóstico de Orden de Canales Físicos -->
+    <div class="section-title">🔧 Diagnóstico: Orden de Canales Físicos</div>
+    <div class="order-selector">
+        <button class="btn-order active" id="btn-ord-RGB" onclick="setChannelOrder('RGB')">RGB</button>
+        <button class="btn-order" id="btn-ord-GRB" onclick="setChannelOrder('GRB')">GRB</button>
+        <button class="btn-order" id="btn-ord-BRG" onclick="setChannelOrder('BRG')">BRG</button>
+        <button class="btn-order" id="btn-ord-RBG" onclick="setChannelOrder('RBG')">RBG</button>
+    </div>
+
     <!-- Templates / Presets de Clima -->
     <div class="section-title">Templates / Presets de Clima</div>
     <div class="grid">
@@ -84,7 +99,7 @@
     <div class="ota-box">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 0.8rem; color: var(--text-dim);">Firmware OTA</span>
-            <span class="badge" id="ota-status">v1.0.2</span>
+            <span class="badge" id="ota-status">v1.0.3</span>
         </div>
         <button class="btn-ota" id="btn-ota" onclick="triggerOTA()">🔄 Buscar y Actualizar Firmware</button>
     </div>
@@ -100,6 +115,20 @@
         const [r, g, b] = rgb;
         document.getElementById('led-rgb').textContent = `RGB: (${r}, ${g}, ${b})`;
         document.getElementById('led-preview').style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    }
+
+    async function setChannelOrder(order) {
+        document.querySelectorAll('.btn-order').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById(`btn-ord-${order}`);
+        if(btn) btn.classList.add('active');
+
+        try {
+            const res = await fetch(`/api/config/order?order=${order}`);
+            const data = await res.json();
+            console.log("[Diagnóstico] Orden de canal cambiado a:", data.order);
+        } catch(e) {
+            console.error("Error cambiando orden de color");
+        }
     }
 
     async function loadLiveWeather() {
@@ -149,7 +178,7 @@
                 }
             } else {
                 status.textContent = "Al día";
-                btn.textContent = "Sistema Actualizado (v1.0.2)";
+                btn.textContent = "Sistema Actualizado (v1.0.3)";
                 setTimeout(() => { btn.disabled = false; btn.textContent = "🔄 Buscar y Actualizar Firmware"; }, 3000);
             }
         } catch(e) {

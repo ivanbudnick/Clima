@@ -66,6 +66,7 @@ class LEDController:
             b_target = int(b * factor)
             order = getattr(config, 'COLOR_ORDER', 'RGB')
             pixel = map_color(r_target, g_target, b_target, order)
+            print("[LED] set_color -> Solicitado: ({},{},{}) | Orden: {} -> Tupla enviada a NeoPixel: {}".format(r, g, b, order, pixel))
             for i in range(self.led_count):
                 self.np[i] = pixel
             self.np.write()
@@ -78,6 +79,10 @@ class LEDController:
         self.mode = mode_name
         self.current_color = rgb
         self.pixel_states = [0] * self.led_count
+        order = getattr(config, 'COLOR_ORDER', 'RGB')
+        factor = getattr(config, 'FACTOR_BRILLO', 0.15)
+        pixel_sample = map_color(int(rgb[0]*factor), int(rgb[1]*factor), int(rgb[2]*factor), order)
+        print("[LED] set_mode: {} | RGB Solicitado: {} | Orden: {} -> Muestra a NeoPixel: {}".format(mode_name, rgb, order, pixel_sample))
         self.fade_to(rgb[0], rgb[1], rgb[2])
 
     def fade_to(self, r, g, b):

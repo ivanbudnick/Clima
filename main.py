@@ -57,7 +57,8 @@ finally:
 # 2. Inicializar controlador físico de NeoPixel
 # En config.py definimos LED_PIN = 2 y LED_COUNT = 6
 led_strip = LEDController(config.LED_PIN, config.LED_COUNT)
-print(f"[Main] Controlador LED inicializado en GPIO {config.LED_PIN} con {config.LED_COUNT} píxeles.")
+order_str = getattr(config, 'COLOR_ORDER', 'RGB')
+print(f"[Main] Controlador LED inicializado en GPIO {config.LED_PIN} con {config.LED_COUNT} píxeles (Orden Físico: {order_str}).")
 
 # --- HELPERS DEL SERVIDOR ---
 
@@ -324,8 +325,21 @@ while True:
                 send_json(client_sock, response_data)
             except Exception as e:
                 print("[Server] Error en /api/weather/custom: {}".format(e))
+        elif base_path == "/api/config/order":
+            try:
+                new_order = params.get("order", "RGB").upper()
+                if new_order in ("RGB", "GRB", "BRG", "RBG"):
+                    config.COLOR_ORDER = new_order
+                    print("[Server] Orden de color cambiado en vivo a: {}".format(new_order))
+                    r, g, b = led_strip.current_color
+                    led_strip.set_mode(led_strip.mode, (r, g, b))
+                    send_json(client_sock, {"success": True, "order": new_order})
+                else:
+                    send_error(client_sock, 400, "Orden invalido")
+            except Exception as e:
+                print("[Server] Error en /api/config/order: {}".format(e))
                 send_error(client_sock, 500, str(e))
-                
+
         elif base_path == "/api/ota/check":
             try:
                 import ota_updater
